@@ -176,7 +176,7 @@ class VoiceChannelConfig(BaseChannelConfig):
     tts_voice: str = "en-US-Journey-D"
     stt_provider: str = "deepgram"
     language: str = "en-US"
-    welcome_greeting: str = "Hi! This is CoPaw. How can I help you?"
+    welcome_greeting: str = "Hi! This is QwenPaw. How can I help you?"
 
 
 class XiaoYiConfig(BaseChannelConfig):
@@ -194,7 +194,7 @@ class WeixinConfig(BaseChannelConfig):
 
     bot_token:      Bearer token obtained after QR code login.
     bot_token_file: Path to persist/load the bot_token
-                    (default ~/.copaw/weixin_bot_token).
+                    (default ~/.qwenpaw/weixin_bot_token).
     base_url:       iLink API base URL (leave empty to use default).
     media_dir:      Local directory for downloaded media files.
     """
@@ -1336,7 +1336,7 @@ def migrate_legacy_config_to_multi_agent() -> bool:
     default_agent_config = AgentProfileConfig(
         id="default",
         name="Default Agent",
-        description="Default CoPaw agent",
+        description="Default QwenPaw agent",
         workspace_dir=str(default_workspace),
         channels=config.channels if config.channels else None,
         mcp=config.mcp if config.mcp else None,
