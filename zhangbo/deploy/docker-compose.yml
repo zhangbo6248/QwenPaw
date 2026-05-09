@@ -1,0 +1,42 @@
+services:
+  qwenpaw:
+    build:
+      context: /Users/zhangbo/Developer/code/python/QwenPaw
+      dockerfile: zhangbo/deploy/Dockerfile
+    image: zhangbo6248/qwenpaw:local
+    container_name: qwenpaw
+    restart: always
+    ports:
+      - "127.0.0.1:8088:8088"
+    # 加入 Docker 网络（访问 HiCLAW 和 MemOS）
+    networks:
+      - hiclaw-net
+      - memos-production_memos_network
+    volumes:
+      # qwenpaw 数据目录 (统一存放于 /Users/zhangbo/docker/qwenpaw)
+      - /Users/zhangbo/docker/qwenpaw/data:/app/working
+      - /Users/zhangbo/docker/qwenpaw/secrets:/app/working.secret
+      - /Users/zhangbo/docker/qwenpaw/backups:/app/working.backups
+
+      # 所有智能体工作区统一管理 (挂载到 QwenPaw 实际读取路径)
+      - /Users/zhangbo/Work/agents/qwenpaw/workspaces:/app/working/workspaces
+
+       #项目目录
+      - /Users/zhangbo/Work/zhangbo/trade/code:/app/projects/trade
+      - /Users/zhangbo/Developer/code:/app/projects/code
+
+      # uv 缓存 - 共享缓存，保留在用户目录
+      - ~/.cache/uv:/root/.cache/uv
+      - ~/.local/share/uv:/root/.local/share/uv
+
+      # Docker socket - 让 QwenPaw 可以执行宿主机 docker 命令
+      - /var/run/docker.sock:/var/run/docker.sock
+
+# Docker 网络配置
+networks:
+  hiclaw-net:
+    external: true
+  memos-production_memos_network:
+    external: true
+
+
