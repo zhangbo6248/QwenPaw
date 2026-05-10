@@ -111,3 +111,6 @@ src/.hypothesis/
 
 # Worktrees
 .worktrees/
+
+# Personal deploy configs
+zhangbo/deploy/
