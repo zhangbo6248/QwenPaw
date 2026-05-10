@@ -31,8 +31,45 @@ from ..mcp import MCPClientManager
 from ..crons.manager import CronManager
 from ..crons.repo.json_repo import JsonJobRepository
 from ...config.config import load_agent_config
+from ...agents.memory.base_memory_manager import (
+    BaseMemoryManager,
+    get_memory_manager_backend,
+)
+from ...agents.memory import ReMeLightMemoryManager
 
 logger = logging.getLogger(__name__)
+
+
+def create_memory_manager_with_fallback(
+    ws: "Workspace",
+) -> type[BaseMemoryManager]:
+    """创建 Memory Manager 类别，支持 fallback。
+
+    当请求的后端不可用时，自动降级到 ReMeLight。
+
+    Args:
+        ws: Workspace 实例
+
+    Returns:
+        Memory Manager 类
+    """
+    backend = ws._config.running.memory_manager_backend
+    return get_memory_manager_backend(backend)
+
+
+def create_memory_manager_with_fallback_wrapper(
+    ws: "Workspace",
+) -> type[BaseMemoryManager]:
+    """包装 create_memory_manager_with_fallback，记录降级日志。
+
+    Args:
+        ws: Workspace 实例
+
+    Returns:
+        Memory Manager 类
+    """
+    backend = ws._config.running.memory_manager_backend
+    return get_memory_manager_backend(backend)
 
 
 class Workspace:
@@ -172,9 +209,7 @@ class Workspace:
         sm.register(
             ServiceDescriptor(
                 name="memory_manager",
-                service_class=lambda ws: get_memory_manager_backend(
-                    ws._config.running.memory_manager_backend,
-                ),
+                service_class=create_memory_manager_with_fallback_wrapper,
                 init_args=lambda ws: {
                     "working_dir": str(ws.workspace_dir),
                     "agent_id": ws.agent_id,

@@ -59,6 +59,21 @@ export interface ReMeLightMemoryConfig {
   recursive_file_watcher: boolean;
 }
 
+export interface MemosMemoryConfig {
+  memos_url: string;
+  api_key: string;
+  user_id: string;
+  cube_name: string;
+  create_cube_if_not_exists: boolean;
+  top_k: number;
+  search_mode: string;
+  relativity_threshold: number;
+  fallback_to_reme_light: boolean;
+  timeout_seconds: number;
+  summarize_when_compact: boolean;
+  auto_memory_interval: number | null;
+}
+
 export interface AutoTitleConfig {
   enabled: boolean;
   timeout_seconds: number;
@@ -83,6 +98,7 @@ export interface AgentsRunningConfig {
   light_context_config: LightContextConfig;
   memory_manager_backend: string;
   reme_light_memory_config: ReMeLightMemoryConfig;
+  memos_memory_config: MemosMemoryConfig;
   approval_level?: string;
   auto_title_config: AutoTitleConfig;
 }

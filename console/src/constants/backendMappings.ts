@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { LightContextCard } from "../pages/Agent/Config/components/LightContextCard";
 import { ReMeLightMemoryCard } from "../pages/Agent/Config/components/ReMeLightMemoryCard";
+import { MemosMemoryCard } from "../pages/Agent/Config/components/MemosMemoryCard";
 
 interface BackendMapping<T> {
   configField: string;
@@ -30,6 +31,12 @@ export const MEMORY_MANAGER_BACKEND_MAPPINGS: Record<
     component: ReMeLightMemoryCard,
     label: "remelight",
     tabKey: "remeLightMemory",
+  },
+  memos: {
+    configField: "memos_memory_config",
+    component: MemosMemoryCard,
+    label: "memos",
+    tabKey: "memosMemory",
   },
 };
 

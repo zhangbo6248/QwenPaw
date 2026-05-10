@@ -4,4 +4,5 @@ export { LlmRetryCard } from "./LlmRetryCard";
 export { LlmRateLimiterCard } from "./LlmRateLimiterCard";
 export { LightContextCard } from "./LightContextCard";
 export { ReMeLightMemoryCard } from "./ReMeLightMemoryCard";
+export { MemosMemoryCard } from "./MemosMemoryCard";
 export { ToolExecutionLevelCard } from "./ToolExecutionLevelCard";

@@ -613,6 +613,81 @@ class ReMeLightMemoryConfig(BaseModel):
     )
 
 
+class MemosMemoryConfig(BaseModel):
+    """MemOS memory manager configuration - MVP (Phase 1).
+
+    精简版配置，只包含 MVP 阶段必要的字段。
+    高级特性（跨 Agent 共享、自动摘要调度）延后到 Phase 3+ 实现。
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    # === Connection ===
+    memos_url: str = Field(
+        default="http://memos-api:8000",
+        description="MemOS API 服务地址",
+    )
+    api_key: str = Field(
+        default="",
+        description="MemOS API Key",
+    )
+    user_id: str = Field(
+        default="qwenpaw",
+        description="MemOS 用户 ID",
+    )
+
+    # === Memory Cube ===
+    cube_name: str = Field(
+        default="qwenpaw",
+        description="Memory Cube 名称",
+    )
+    create_cube_if_not_exists: bool = Field(
+        default=True,
+        description="不存在时自动创建 Cube",
+    )
+
+    # === Retrieval ===
+    top_k: int = Field(
+        default=5,
+        ge=1,
+        le=50,
+        description="检索返回数量",
+    )
+    search_mode: str = Field(
+        default="fast",
+        pattern="^(fast|fine|mixture)$",
+        description="搜索模式: fast/fine/mixture",
+    )
+    relativity_threshold: float = Field(
+        default=0.45,
+        ge=0.0,
+        le=1.0,
+        description="相关性阈值过滤",
+    )
+
+    # === Compatibility ===
+    fallback_to_reme_light: bool = Field(
+        default=True,
+        description="异常时回退到 ReMeLight",
+    )
+    timeout_seconds: int = Field(
+        default=30,
+        ge=5,
+        le=120,
+        description="API 超时时间(秒)",
+    )
+
+    # === Auto Store ===
+    summarize_when_compact: bool = Field(
+        default=True,
+        description="上下文压缩时自动存储记忆",
+    )
+    auto_memory_interval: int | None = Field(
+        default=None,
+        description="每 N 次用户查询自动存储一次。None 禁用，1 每次都存，5 每5次存",
+    )
+
+
 class ContextCompactConfig(BaseModel):
     """Context compaction configuration."""
 
@@ -924,6 +999,10 @@ class AgentsRunningConfig(BaseModel):
 
     reme_light_memory_config: ReMeLightMemoryConfig = Field(
         default_factory=ReMeLightMemoryConfig,
+    )
+
+    memos_memory_config: MemosMemoryConfig = Field(
+        default_factory=MemosMemoryConfig,
     )
 
     daily_memory_dir: str = Field(

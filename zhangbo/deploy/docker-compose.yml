@@ -1,3 +1,5 @@
+name: qwenpaw
+
 services:
   qwenpaw:
     build:
@@ -10,8 +12,12 @@ services:
       - "127.0.0.1:8088:8088"
     # 加入 Docker 网络（访问 HiCLAW 和 MemOS）
     networks:
-      - hiclaw-net
-      - memos-production_memos_network
+      - memos_shared_net
+    # 设置 PYTHONPATH，让 Python 优先加载挂载的源码
+    environment:
+      - PYTHONPATH=/app/projects/code/python/QwenPaw/src:${PYTHONPATH}
+      # 指定 console 静态文件路径（因为挂载源码覆盖了 venv 安装的包）
+      - QWENPAW_CONSOLE_STATIC_DIR=/app/venv/lib/python3.11/site-packages/qwenpaw/console
     volumes:
       # qwenpaw 数据目录 (统一存放于 /Users/zhangbo/docker/qwenpaw)
       - /Users/zhangbo/docker/qwenpaw/data:/app/working
@@ -24,6 +30,8 @@ services:
        #项目目录
       - /Users/zhangbo/Work/zhangbo/trade/code:/app/projects/trade
       - /Users/zhangbo/Developer/code:/app/projects/code
+      # 源码挂载（覆盖 pip 安装的 qwenpaw，使用本地修改的代码）
+      - /Users/zhangbo/Developer/code/python/QwenPaw:/app/projects/code/python/QwenPaw
 
       # uv 缓存 - 共享缓存，保留在用户目录
       - ~/.cache/uv:/root/.cache/uv
@@ -34,9 +42,7 @@ services:
 
 # Docker 网络配置
 networks:
-  hiclaw-net:
-    external: true
-  memos-production_memos_network:
+  memos_shared_net:
     external: true
 
 

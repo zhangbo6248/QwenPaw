@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from .agent_md_manager import AgentMdManager
 from .base_memory_manager import BaseMemoryManager
+from .memos_memory_manager import MemosMemoryManager
 from .reme_light_memory_manager import ReMeLightMemoryManager
 
 # Proactive symbols are lazily re-exported via __getattr__ at runtime to
@@ -27,6 +28,7 @@ if TYPE_CHECKING:  # pragma: no cover
 __all__ = [
     "AgentMdManager",
     "BaseMemoryManager",
+    "MemosMemoryManager",
     "ReMeLightMemoryManager",
     # proactive symbols resolved lazily at runtime via __getattr__
     "ProactiveConfig",

@@ -925,7 +925,16 @@ class LightContextManager(BaseContextManager):
             logger.info(f"Marked {updated_count} messages as compacted")
 
             rlmc = running_config.reme_light_memory_config
-            if messages_to_compact and rlmc.summarize_when_compact:
+            mmc = running_config.memos_memory_config
+
+            # 优先使用 MemOS 配置
+            summarize_when_compact = (
+                mmc.summarize_when_compact
+                if mmc is not None
+                else rlmc.summarize_when_compact
+            )
+
+            if messages_to_compact and summarize_when_compact:
                 memory_manager.add_summarize_task(
                     messages=messages_to_compact,
                 )
@@ -991,7 +1000,19 @@ class LightContextManager(BaseContextManager):
 
             agent_config = load_agent_config(self.agent_id)
             rlmc = agent_config.running.reme_light_memory_config
-            auto_memory_interval = rlmc.auto_memory_interval
+            mmc = agent_config.running.memos_memory_config
+
+            # 优先使用 MemOS 配置，如果没有则回退到 ReMeLight 配置
+            auto_memory_interval = (
+                mmc.auto_memory_interval
+                if mmc and mmc.auto_memory_interval is not None
+                else rlmc.auto_memory_interval
+            )
+            summarize_when_compact = (
+                mmc.summarize_when_compact
+                if mmc is not None
+                else rlmc.summarize_when_compact
+            )
 
             if auto_memory_interval is None or auto_memory_interval <= 0:
                 return None
