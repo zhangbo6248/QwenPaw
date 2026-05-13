@@ -159,12 +159,32 @@ class MemosMemoryManager(BaseMemoryManager):
 
     def get_memory_prompt(self, language: str = "zh") -> str:
         """返回记忆引导提示词."""
+        visible = self._config.memory_tool_visible if self._config else False
+
         if language.startswith("zh"):
+            if visible:
+                return (
+                    "你拥有一个由 MemOS 驱动的长期记忆系统。\n"
+                    "你可以使用 memos_memory_search 工具来检索过去的对话记忆和知识。\n"
+                    "你可以使用 memos_add_memory 工具来保存重要信息到记忆中。\n"
+                    "主动检索与你当前任务相关的历史记忆，以提供更连贯的回答。\n"
+                    "注意：记忆操作结果会以通知形式返回（带 🔍💾 等图标），请将这些通知"
+                    "自然地展示给用户。"
+                )
             return (
                 "你拥有一个由 MemOS 驱动的长期记忆系统。\n"
                 "你可以使用 memos_memory_search 工具来检索过去的对话记忆和知识。\n"
                 "你可以使用 memos_add_memory 工具来保存重要信息到记忆中。\n"
                 "主动检索与你当前任务相关的历史记忆，以提供更连贯的回答。"
+            )
+        if visible:
+            return (
+                "You have a long-term memory system powered by MemOS.\n"
+                "Use memos_memory_search to retrieve past conversation memories.\n"
+                "Use memos_add_memory to save important information to memory.\n"
+                "Proactively search for memories relevant to your current task.\n"
+                "Note: Memory operation results will be returned with notification "
+                "icons (🔍💾). Present these notifications naturally to the user."
             )
         return (
             "You have a long-term memory system powered by MemOS.\n"
@@ -322,21 +342,53 @@ class MemosMemoryManager(BaseMemoryManager):
                     ],
                 )
 
-            lines = [f"Found {len(all_memories)} relevant memories:\n"]
-            for i, mem in enumerate(all_memories, 1):
-                content = mem.get("memory", "")[:200]
-                metadata = mem.get("metadata", {})
-                score = metadata.get("relativity", 0)
-                lines.append(f"{i}. [score={score:.2f}] {content}...")
-
-            return ToolResponse(
-                content=[
-                    TextBlock(
-                        type="text",
-                        text="\n".join(lines),
-                    ),
-                ],
+            visible = self._config.memory_tool_visible if self._config else False
+            logger.info(
+                f"[MEMOS_DEBUG] search: visible={visible}, "
+                f"raw={self._config.memory_tool_visible if self._config else 'N/A'}"
             )
+
+            if visible:
+                # 通知模式：带 emoji 和标签摘要
+                tags = set()
+                lines = [
+                    f"🔍 检索到 {len(all_memories)} 条相关记忆\n",
+                ]
+                for i, mem in enumerate(all_memories, 1):
+                    content = mem.get("memory", "")[:200]
+                    metadata = mem.get("metadata", {})
+                    score = metadata.get("relativity", 0)
+                    mem_tags = metadata.get("tags", [])
+                    tags.update(mem_tags)
+                    lines.append(f"{i}. [score={score:.2f}] {content}...")
+                if tags:
+                    lines.append(f"\n🏷️ 标签: {'、'.join(list(tags)[:8])}")
+
+                return ToolResponse(
+                    content=[
+                        TextBlock(
+                            type="text",
+                            text="\n".join(lines),
+                        ),
+                    ],
+                )
+            else:
+                # 简洁模式（默认）：只返回核心数据供 agent 自己处理
+                lines = [f"Found {len(all_memories)} relevant memories:\n"]
+                for i, mem in enumerate(all_memories, 1):
+                    content = mem.get("memory", "")[:200]
+                    metadata = mem.get("metadata", {})
+                    score = metadata.get("relativity", 0)
+                    lines.append(f"{i}. [score={score:.2f}] {content}...")
+
+                return ToolResponse(
+                    content=[
+                        TextBlock(
+                            type="text",
+                            text="\n".join(lines),
+                        ),
+                    ],
+                )
 
         except Exception as e:
             return ToolResponse(
@@ -387,11 +439,25 @@ class MemosMemoryManager(BaseMemoryManager):
                 },
             )
 
+            visible = self._config.memory_tool_visible if self._config else False
+            logger.info(
+                f"[MEMOS_DEBUG] search: visible={visible}, "
+                f"raw={self._config.memory_tool_visible if self._config else 'N/A'}"
+            )
+            if visible:
+                memory_id = ""
+                if result and isinstance(result, list) and len(result) > 0:
+                    memory_id = result[0].get("memory_id", "")
+                summary = content[:60] + ("..." if len(content) > 60 else "")
+                text = f"💾 记忆已保存（{memory_id[:8]}）\n📝 {summary}"
+            else:
+                text = f"Memory added successfully. Result: {result}"
+
             return ToolResponse(
                 content=[
                     TextBlock(
                         type="text",
-                        text=f"Memory added successfully. Result: {result}",
+                        text=text,
                     )
                 ],
             )

@@ -186,6 +186,16 @@ export function MemosMemoryCard() {
           },
         ]}
       />
+
+      {/* 记忆操作可见性 - 放在 Card 顶层，高级配置外面 */}
+      <Form.Item
+        label={t("agentConfig.memoryToolVisible")}
+        name={["memos_memory_config", "memory_tool_visible"]}
+        valuePropName="checked"
+        tooltip={t("agentConfig.memoryToolVisibleTooltip")}
+      >
+        <Switch />
+      </Form.Item>
     </Card>
   );
 }

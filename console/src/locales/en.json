@@ -1914,5 +1914,7 @@
   "agentConfig.summarizeWhenCompactTooltip": "Automatically store memories to MemOS when context is compacted",
   "agentConfig.autoMemoryInterval": "Auto memory interval",
   "agentConfig.autoMemoryIntervalTooltip": "Store memories every N user queries. None disables, 1 means every query, 5 means every 5 queries.",
-  "agentConfig.autoMemoryIntervalPlaceholder": "Leave empty to disable"
+  "agentConfig.autoMemoryIntervalPlaceholder": "Leave empty to disable",
+  "agentConfig.memoryToolVisible": "Memory operation visible",
+  "agentConfig.memoryToolVisibleTooltip": "When enabled, the Agent will show memory retrieval and save notifications in conversations (e.g. 🔍 Found 3 relevant memories, 💾 Memory saved), so you can track its memory activity. When disabled, memory works silently in the background."
 }

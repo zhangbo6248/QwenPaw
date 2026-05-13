@@ -687,6 +687,12 @@ class MemosMemoryConfig(BaseModel):
         description="每 N 次用户查询自动存储一次。None 禁用，1 每次都存，5 每5次存",
     )
 
+    # === Notification ===
+    memory_tool_visible: bool = Field(
+        default=False,
+        description="是否在对话中显示记忆操作通知（如检索到多少条记忆、保存了什么内容）",
+    )
+
 
 class ContextCompactConfig(BaseModel):
     """Context compaction configuration."""

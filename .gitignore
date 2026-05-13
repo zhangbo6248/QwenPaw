@@ -114,3 +114,7 @@ src/.hypothesis/
 
 # Personal deploy configs
 zhangbo/deploy/
+
+
+.workbuddy/
+!/.workbuddyignore

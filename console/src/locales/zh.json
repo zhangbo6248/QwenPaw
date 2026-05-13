@@ -1922,5 +1922,7 @@
   "agentConfig.summarizeWhenCompactTooltip": "当上下文被压缩时自动存储记忆到 MemOS",
   "agentConfig.autoMemoryInterval": "每N次查询自动存储",
   "agentConfig.autoMemoryIntervalTooltip": "每N次用户查询自动存储一次记忆。None 禁用，1 每次都存，5 每5次存。",
-  "agentConfig.autoMemoryIntervalPlaceholder": "留空则禁用"
+  "agentConfig.autoMemoryIntervalPlaceholder": "留空则禁用",
+  "agentConfig.memoryToolVisible": "记忆操作可见",
+  "agentConfig.memoryToolVisibleTooltip": "开启后，Agent 会在对话中显示记忆检索和保存的通知（如 🔍 检索到 3 条相关记忆、💾 已保存等），方便你了解 Agent 的记忆活动；关闭后记忆在后台静默工作"
 }
