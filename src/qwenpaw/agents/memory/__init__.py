@@ -7,9 +7,6 @@ from .agent_md_manager import AgentMdManager
 from .base_memory_manager import BaseMemoryManager
 from .memos_memory_manager import MemosMemoryManager
 from .reme_light_memory_manager import ReMeLightMemoryManager
-from .adbpg_memory_manager import (
-    ADBPGMemoryManager,
-)  # registers "adbpg" backend
 
 # Proactive symbols are lazily re-exported via __getattr__ at runtime to
 # avoid circular imports (proactive -> react_agent -> agents.memory loop).
@@ -33,7 +30,6 @@ __all__ = [
     "BaseMemoryManager",
     "MemosMemoryManager",
     "ReMeLightMemoryManager",
-    "ADBPGMemoryManager",
     # proactive symbols resolved lazily at runtime via __getattr__
     "ProactiveConfig",
     "ProactiveTask",

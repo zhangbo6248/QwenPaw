@@ -682,15 +682,19 @@ class LightContextManager(BaseContextManager):
         if command_handler is not None and command_handler.is_command(query):
             return None
 
+        agent_config = load_agent_config(self.agent_id)
+        rlmc = agent_config.running.reme_light_memory_config
+        ms = rlmc.auto_memory_search_config
+
+        if not ms.enabled:
+            return None
+
         memory_manager = agent.memory_manager
         if memory_manager is None:
             return None
 
         try:
-            result = await memory_manager.auto_memory_search(
-                msg,
-                agent_name=agent.name,
-            )
+            result = await memory_manager.retrieve(msg, agent_name=agent.name)
         except BaseException as e:
             logger.warning(
                 "memory_manager.retrieve failed, skipping e=%s",
@@ -920,8 +924,18 @@ class LightContextManager(BaseContextManager):
             )
             logger.info(f"Marked {updated_count} messages as compacted")
 
-            if messages_to_compact:
-                await memory_manager.summarize_when_compact(
+            rlmc = running_config.reme_light_memory_config
+            mmc = running_config.memos_memory_config
+
+            # 优先使用 MemOS 配置
+            summarize_when_compact = (
+                mmc.summarize_when_compact
+                if mmc is not None
+                else rlmc.summarize_when_compact
+            )
+
+            if messages_to_compact and summarize_when_compact:
+                memory_manager.add_summarize_task(
                     messages=messages_to_compact,
                 )
 
@@ -984,13 +998,45 @@ class LightContextManager(BaseContextManager):
             if memory_manager is None:
                 return None
 
-            memory = agent.memory
-            all_messages = [msg for msg, _ in memory.content]
+            agent_config = load_agent_config(self.agent_id)
+            rlmc = agent_config.running.reme_light_memory_config
+            mmc = agent_config.running.memos_memory_config
 
-            if all_messages:
-                await memory_manager.auto_memory(
-                    all_messages=all_messages,
-                )
+            # 优先使用 MemOS 配置，如果没有则回退到 ReMeLight 配置
+            auto_memory_interval = (
+                mmc.auto_memory_interval
+                if mmc and mmc.auto_memory_interval is not None
+                else rlmc.auto_memory_interval
+            )
+            summarize_when_compact = (
+                mmc.summarize_when_compact
+                if mmc is not None
+                else rlmc.summarize_when_compact
+            )
+
+            if auto_memory_interval is None or auto_memory_interval <= 0:
+                return None
+
+            memory = agent.memory
+            # memory.content is list[tuple[Msg, marks]]
+            # Find indices of user messages to locate recent interval
+            user_msg_indices = [
+                i
+                for i, (msg, _) in enumerate(memory.content)
+                if msg.role == "user"
+            ]
+
+            if (
+                len(user_msg_indices) >= auto_memory_interval
+                and len(user_msg_indices) % auto_memory_interval == 0
+            ):
+                # Get messages from the start of recent interval
+                start_index = user_msg_indices[-auto_memory_interval]
+                recent_messages = [
+                    msg for msg, _ in memory.content[start_index:]
+                ]
+                if recent_messages:
+                    memory_manager.add_summarize_task(messages=recent_messages)
         except Exception as e:
             logger.warning("post_reply hook failed: %s", e)
 
