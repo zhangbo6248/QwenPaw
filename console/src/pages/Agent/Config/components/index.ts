@@ -6,3 +6,4 @@ export { LightContextCard } from "./LightContextCard";
 export { ReMeLightMemoryCard } from "./ReMeLightMemoryCard";
 export { MemosMemoryCard } from "./MemosMemoryCard";
 export { ToolExecutionLevelCard } from "./ToolExecutionLevelCard";
+export { ADBPGConfigCard } from "./ADBPGConfigCard";

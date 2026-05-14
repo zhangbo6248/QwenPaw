@@ -60,24 +60,17 @@
 
 ## 新闻
 
+- [2026-05-14] 我们发布了 **v1.1.7**！完整更新说明见 [v1.1.7 发布说明](https://qwenpaw.agentscope.io/release-notes)。
+
+  - **[v1.1.7] 新增**：收件箱（审批与推送消息）；定时任务增强（一次性执行、日历视图、内置模板、执行历史与追踪）；Browser Use 批量操作与文件下载；远程 MCP OAuth 2.1 认证；控制台插件管理；Qwen-Image 与 Wan 2.7 插件；外部 Agent 异步执行。
+  - **[v1.1.7] 变更**：模型选择器重设计为可搜索平铺列表；聊天浮动按钮。
+  - **[v1.1.7] 性能**：文件读取时内存占用优化；Keyring 超时保护。
+  - **[v1.1.7] 修复**：会话历史路由；火山引擎模型 ID；飞书 WebSocket 保活。
+  - **[v1.1.7] 感谢新贡献者**：@weixizi、@StarTrekking、@aqilaziz、@suntp。
+
+- [2026-05-09] 我们发布了 **v1.1.6**！完整更新说明见 [v1.1.6 发布说明](https://qwenpaw.agentscope.io/release-notes)。
+
 - [2026-04-29] 我们发布了 **v1.1.5**！完整更新说明见 [v1.1.5 发布说明](https://qwenpaw.agentscope.io/release-notes)。
-
-  - **[v1.1.5] 新增**：记忆搜索优化；上下文压缩降级机制；ACP Agent 重命名与删除；QQ 语音与 ASR 支持。
-  - **[v1.1.5] 性能**：配置文件与技能清单加载缓存；模型 API 请求去重；控制台聊天虚拟化渲染。
-  - **[v1.1.5] 修复**：频道审批命令；时区规范化；MCP 执行超时处理。
-  - **[v1.1.5] 感谢新贡献者**：@LinQi0777、@albert-zen、@ideal、@CA-mambo、@bxy3045134656。
-
-- [2026-04-24] 我们发布了 **v1.1.4**！完整更新说明见 [v1.1.4 发布说明](https://qwenpaw.agentscope.io/release-notes)。
-
-  - **[v1.1.4] 新增**：记忆与上下文架构重构；计划执行模式；Shell 绕过检测可配置化；免认证主机白名单；SIP 语音频道；会话右键菜单；浏览器启动参数与 Shell 命令超时配置； 内置DeepSeek V4 模型。
-  - **[v1.1.4] 变更**：工具守卫审批系统；Docker 构建优化；动态插件注册。
-  - **[v1.1.4] 感谢新贡献者**：@shadowabi、@shaohuaxi、@vincentyzhj、@hlgone、@twz915、@Nioolek。
-
-- [2026-04-22] 我们发布了 **v1.1.3**！完整更新说明见 [v1.1.3 发布说明](https://qwenpaw.agentscope.io/release-notes)。
-
-- [2026-04-17] 我们发布了 **v1.1.2**！完整更新说明见 [v1.1.2 发布说明](https://qwenpaw.agentscope.io/release-notes)。
-
-- [2026-04-14] 我们发布了 **v1.1.1**！完整更新说明见 [v1.1.1 发布说明](https://qwenpaw.agentscope.io/release-notes)。
 
 - [2026-04-12] **CoPaw 正式更名为 QwenPaw**：这是一次品牌名称焕新，也是我们迈向下一阶段开源的重要一步。
 
@@ -279,8 +272,6 @@ docker run -p 127.0.0.1:8088:8088 \
 >   agentscope/qwenpaw:latest
 > ```
 > 无需端口映射（`-p`），容器直接共享宿主机网络。注意这会将容器的所有端口暴露在宿主机上，可能与已占用的端口产生冲突。
->
-> **提示：** 如果你只挂载了 `/app/working` 而没有单独挂载 `/app/working.secret`，入口脚本会自动将 secrets 重定向到 `/app/working/.secret`，使其也保存在同一个 volume 中。
 
 镜像从零构建。若需自行构建镜像，请参阅 [scripts/README.md](scripts/README.md#build-docker-image) 中的「Build Docker image」小节，构建后推送到你的镜像仓库。
 

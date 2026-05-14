@@ -60,24 +60,17 @@ Your personal AI assistant — easy to install, deploy locally or in the cloud, 
 
 ## News
 
+- [2026-05-14] We've released **v1.1.7**! See the full [v1.1.7 Release Notes](https://qwenpaw.agentscope.io/release-notes).
+
+  - **[v1.1.7] Added**: Inbox (approvals & push messages); cron job enhancements (one-time execution, calendar view, built-in templates, execution history & traces); Browser Use batch actions & file download; remote MCP OAuth 2.1 auth; console plugin management; Qwen-Image & Wan 2.7 plugins; external agent async execution.
+  - **[v1.1.7] Changed**: Model selector redesigned as a searchable flat list; floating chat button.
+  - **[v1.1.7] Performance**: Optimized memory usage for file reads; keyring timeout protection.
+  - **[v1.1.7] Fixed**: Session history routing; Volcengine model IDs; Feishu WebSocket keepalive.
+  - **[v1.1.7] New Contributors**: @weixizi, @StarTrekking, @aqilaziz, @suntp.
+
+- [2026-05-09] We've released **v1.1.6**! See the full [v1.1.6 Release Notes](https://qwenpaw.agentscope.io/release-notes).
+
 - [2026-04-29] We've released **v1.1.5**! See the full [v1.1.5 Release Notes](https://qwenpaw.agentscope.io/release-notes).
-
-  - **[v1.1.5] Added**: Memory search optimization; context compaction fallback; ACP agent rename & delete; QQ voice & ASR support.
-  - **[v1.1.5] Performance**: Config and skill manifest loading cache; model API request deduplication; console chat virtualized rendering.
-  - **[v1.1.5] Fixed**: Channel approval commands; timezone normalization; MCP execution timeout handling.
-  - **[v1.1.5] New Contributors**: @LinQi0777, @albert-zen, @ideal, @CA-mambo, @bxy3045134656.
-
-- [2026-04-24] We've released **v1.1.4**! See the full [v1.1.4 Release Notes](https://qwenpaw.agentscope.io/release-notes).
-
-  - **[v1.1.4] Added**: Memory & context architecture refactor; plan mode; configurable shell evasion checks; auth-bypass host whitelist; SIP voice channel; session right-click menu; browser launch parameters and shell command timeout; Built-in DeepSeek V4 models.
-  - **[v1.1.4] Changed**: Tool Guard approval system; Docker build improvements; dynamic plugin registration.
-  - **[v1.1.4] New Contributors**: @shadowabi, @shaohuaxi, @vincentyzhj, @hlgone, @twz915, @Nioolek.
-
-- [2026-04-22] We've released **v1.1.3**! See the full [v1.1.3 Release Notes](https://qwenpaw.agentscope.io/release-notes).
-
-- [2026-04-17] We've released **v1.1.2**! See the full [v1.1.2 Release Notes](https://qwenpaw.agentscope.io/release-notes).
-
-- [2026-04-14] We've released **v1.1.1**! See the full [v1.1.1 Release Notes](https://qwenpaw.agentscope.io/release-notes).
 
 - [2026-04-12] **CoPaw is Officially Rebranding to QwenPaw**: This rebranding marks an important step forward into our next phase of open-source development.
 
@@ -278,7 +271,6 @@ Then open **http://127.0.0.1:8088/** for the Console. Config, memory, and skills
 > ```
 > No port mapping (`-p`) is needed; the container shares the host network directly. Note that all container ports are exposed on the host, which may cause conflicts if the port is already in use.
 >
-> **Note:** If you only mount `/app/working` without a separate volume for `/app/working.secret`, the entrypoint will automatically redirect secrets into `/app/working/.secret` so they persist on the same volume.
 
 The image is built from scratch. To build the image yourself, please refer to the [Build Docker image](scripts/README.md#build-docker-image) section in `scripts/README.md`, and then push to your registry.
 
