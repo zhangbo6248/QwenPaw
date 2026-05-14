@@ -278,9 +278,23 @@ export function ChannelDrawer({
             <Form.Item
               name="access_token"
               label="Access Token"
-              rules={[{ required: true }]}
+              tooltip="用于首次登录；留空则只用 username/password 登录"
             >
               <Input.Password placeholder="syt_..." />
+            </Form.Item>
+            <Form.Item
+              name="username"
+              label="Username"
+              tooltip="用于 token 失效时自动重新登录"
+            >
+              <Input placeholder="bot" />
+            </Form.Item>
+            <Form.Item
+              name="password"
+              label="Password"
+              tooltip="用于 token 失效时自动重新登录"
+            >
+              <Input.Password placeholder="password" />
             </Form.Item>
           </>
         );

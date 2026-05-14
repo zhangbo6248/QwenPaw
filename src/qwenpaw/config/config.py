@@ -693,6 +693,20 @@ class MemosMemoryConfig(BaseModel):
         description="是否在对话中显示记忆操作通知（如检索到多少条记忆、保存了什么内容）",
     )
 
+    # === Status (Runtime, not persisted) ===
+    memos_status: str = Field(
+        default="unknown",
+        description="MemOS 当前状态: unknown/healthy/degraded/error",
+    )
+    memos_error_msg: str | None = Field(
+        default=None,
+        description="MemOS 错误详情",
+    )
+    memos_last_check: str | None = Field(
+        default=None,
+        description="最后一次健康检查时间",
+    )
+
 
 class ContextCompactConfig(BaseModel):
     """Context compaction configuration."""

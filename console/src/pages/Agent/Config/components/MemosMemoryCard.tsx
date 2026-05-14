@@ -7,17 +7,64 @@ import {
   Collapse,
   Select,
   Slider,
+  Tag,
 } from "@agentscope-ai/design";
 import { useTranslation } from "react-i18next";
 import styles from "../index.module.less";
 
-export function MemosMemoryCard() {
+function MemosStatusBadge({
+  status,
+  errorMsg,
+}: {
+  status?: string;
+  errorMsg?: string;
+}) {
+  const { t } = useTranslation();
+
+  if (!status || status === "unknown") {
+    return null;
+  }
+
+  if (status === "healthy") {
+    return (
+      <Tag color="green">{t("agentConfig.memosStatusHealthy", "正常")}</Tag>
+    );
+  }
+
+  if (status === "degraded") {
+    return (
+      <Tag color="orange">
+        {t("agentConfig.memosStatusDegraded", "降级")}
+      </Tag>
+    );
+  }
+
+  return (
+    <Tag color="red" title={errorMsg || ""}>
+      {t("agentConfig.memosStatusError", "错误")}
+    </Tag>
+  );
+}
+
+export function MemosMemoryCard({
+  memosStatus,
+}: {
+  memosStatus?: { status: string; errorMsg?: string };
+}) {
   const { t } = useTranslation();
 
   return (
     <Card
       className={styles.formCard}
-      title={t("agentConfig.memosMemoryTitle")}
+      title={
+        <span>
+          {t("agentConfig.memosMemoryTitle")}
+          <MemosStatusBadge
+            status={memosStatus?.status}
+            errorMsg={memosStatus?.errorMsg}
+          />
+        </span>
+      }
     >
       {/* 兼容性配置 - 顶层 */}
       <Form.Item

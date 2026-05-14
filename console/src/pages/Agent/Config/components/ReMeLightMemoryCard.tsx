@@ -11,7 +11,13 @@ import { useTranslation } from "react-i18next";
 import { SliderWithValue } from "./SliderWithValue";
 import styles from "../index.module.less";
 
-export function ReMeLightMemoryCard() {
+interface ReMeLightMemoryCardProps {
+  memosStatus?: { status: string; errorMsg?: string };
+}
+
+export function ReMeLightMemoryCard({
+  memosStatus: _memosStatus,
+}: ReMeLightMemoryCardProps) {
   const { t } = useTranslation();
 
   const baseUrl = Form.useWatch([

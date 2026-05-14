@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 """MemOS-backed memory manager for agents."""
+import asyncio
+import json
 import logging
 from collections.abc import Callable
+from datetime import datetime, timezone
 from pathlib import Path
 
 from agentscope.message import Msg, TextBlock
@@ -41,6 +44,7 @@ class MemosMemoryManager(BaseMemoryManager):
         self._client: MemOSClient | None = None
         self._config: MemosMemoryConfig | None = None
         self._cube_id: str | None = None
+        self._health_monitor_started: bool = False  # 添加标记
 
         logger.info(
             f"MemosMemoryManager init: "
@@ -63,10 +67,10 @@ class MemosMemoryManager(BaseMemoryManager):
             return MemosMemoryConfig()
 
     async def start(self) -> None:
-        """初始化: 加载配置, 连接 MemOS, 验证/创建 Cube, 失败时降级.
+        """初始化: 加载配置, 连接 MemOS, 验证/创建 Cube.
 
-        如果 MemOS 不可用且 fallback_to_reme_light=True，会抛出异常
-        触发工厂层降级到 ReMeLight。
+        即使 MemOS 不可用也不会阻塞 Agent 启动，会静默降级到只读模式。
+        用户仍然可以进入配置页面切换到 ReMeLight。
         """
         # Step 1: 加载配置
         self._config = self._load_config()
@@ -83,71 +87,162 @@ class MemosMemoryManager(BaseMemoryManager):
             api_key=self._config.api_key,
             timeout=self._config.timeout_seconds,
         )
-        await self._client.__aenter__()
 
-        # Step 3: 健康检查 - 失败则触发降级
-        if not await self._client.health_check():
-            await self._client.__aexit__(None, None, None)
+        try:
+            await self._client.__aenter__()
+        except Exception as e:
+            logger.warning(f"MemOS client init failed: {e}")
             self._client = None
+            self._initialized = False
+            return
 
-            if self._config.fallback_to_reme_light:
+        # Step 3: 健康检查 - 失败则静默降级
+        try:
+            if not await self._client.health_check():
                 logger.warning(
-                    f"MemOS health check failed for agent {self.agent_id}. "
-                    f"Falling back to ReMeLight. "
-                    f"url={self._config.memos_url}",
-                )
-                # 抛出异常让工厂层捕获并降级
-                raise ConnectionError(
-                    f"MemOS unavailable at {self._config.memos_url}, "
-                    f"fallback_to_reme_light=True",
-                )
-            else:
-                raise ConnectionError(
                     f"MemOS health check failed at {self._config.memos_url}. "
-                    f"Set fallback_to_reme_light=True to enable auto-fallback.",
+                    f"Running in degraded mode. "
+                    f"User can still access config page to switch to ReMeLight."
                 )
+                await self._graceful_degrade("健康检查失败")
+                return
+        except Exception as e:
+            logger.warning(f"MemOS health check error: {e}")
+            await self._graceful_degrade(f"健康检查异常: {str(e)[:100]}")
+            return
 
         logger.info("MemOS health check passed")
 
-        # Step 4: 验证 Cube 是否存在
+        # Step 4: 验证 Cube
         try:
             cube_exists = await self._client.exist_cube(self._config.cube_name)
             if not cube_exists:
                 if self._config.create_cube_if_not_exists:
                     logger.warning(
                         f"Cube '{self._config.cube_name}' does not exist. "
-                        f"Auto-creation not fully implemented yet. "
-                        f"Please create cube manually or via admin API.",
+                        f"Auto-creation not fully implemented yet."
                     )
                     self._cube_id = self._config.cube_name
                 else:
-                    raise ValueError(
-                        f"Cube '{self._config.cube_name}' does not exist "
-                        f"and create_cube_if_not_exists=False",
+                    logger.warning(
+                        f"Cube '{self._config.cube_name}' does not exist. "
+                        f"Running in degraded mode."
                     )
+                    await self._graceful_degrade("Cube 不存在")
+                    return
             else:
                 self._cube_id = self._config.cube_name
                 logger.info(f"Cube '{self._cube_id}' verified")
         except Exception as e:
-            # Cube 验证失败，也触发降级
-            await self._client.__aexit__(None, None, None)
-            self._client = None
+            logger.warning(f"MemOS cube validation error: {e}")
+            await self._graceful_degrade(f"Cube 验证失败: {str(e)[:100]}")
+            return
 
-            if self._config.fallback_to_reme_light:
-                logger.warning(
-                    f"MemOS cube validation failed for agent {self.agent_id}: {e}. "
-                    f"Falling back to ReMeLight.",
-                )
-                raise ConnectionError(
-                    f"MemOS cube error: {e}, fallback_to_reme_light=True",
-                )
-            else:
-                raise
-
+        self._initialized = True
+        self._update_status("healthy")
+        
         logger.info(
             f"MemosMemoryManager started successfully: "
             f"cube_id={self._cube_id}",
         )
+        
+        # 启动后台健康检查
+        self.start_health_monitor()
+
+    async def _graceful_degrade(self, error_msg: str = "") -> None:
+        """优雅降级：关闭客户端，设置未初始化标记."""
+        if self._client:
+            try:
+                await self._client.__aexit__(None, None, None)
+            except:
+                pass
+        self._client = None
+        self._initialized = False
+        
+        # 更新状态
+        self._update_status("degraded", error_msg or "MemOS 连接失败")
+        
+        logger.warning(
+            "MemOS degraded to read-only mode. "
+            "Memory read/write operations will return friendly errors. "
+            "You can still access config page."
+        )
+        
+        # 启动/重启后台健康检查（会在降级时尝试重建连接）
+        self.start_health_monitor()
+
+    def _update_status(self, status: str, error_msg: str | None = None) -> None:
+        """更新 MemOS 状态到配置文件."""
+        if not self._config:
+            return
+        
+        self._config.memos_status = status
+        self._config.memos_error_msg = error_msg
+        self._config.memos_last_check = datetime.now(timezone.utc).isoformat()
+        
+        try:
+            # 读取当前配置文件
+            agent_json_path = Path(self.working_dir) / "agent.json"
+            if agent_json_path.exists():
+                with open(agent_json_path, "r", encoding="utf-8") as f:
+                    config = json.load(f)
+                
+                # 更新 memos_memory_config 下的状态
+                if "running" in config and "memos_memory_config" in config["running"]:
+                    config["running"]["memos_memory_config"]["memos_status"] = status
+                    config["running"]["memos_memory_config"]["memos_error_msg"] = error_msg
+                    config["running"]["memos_memory_config"]["memos_last_check"] = self._config.memos_last_check
+                    
+                    with open(agent_json_path, "w", encoding="utf-8") as f:
+                        json.dump(config, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.warning(f"Failed to update memos status: {e}")
+
+    async def _health_check_loop(self) -> None:
+        """后台定时健康检查，降级时尝试重建连接."""
+        import time
+        while True:
+            await asyncio.sleep(30)  # 每 30 秒检查一次
+            
+            if not self._config:
+                continue
+            
+            # 如果客户端存在，直接做健康检查
+            if self._client:
+                try:
+                    if await self._client.health_check():
+                        self._update_status("healthy")
+                    else:
+                        self._update_status("degraded", "健康检查返回 false")
+                except Exception as e:
+                    self._update_status("error", str(e)[:200])
+            else:
+                # 客户端不存在（降级状态），尝试重建连接
+                try:
+                    new_client = MemOSClient(
+                        base_url=self._config.memos_url,
+                        api_key=self._config.api_key,
+                        timeout=self._config.timeout_seconds,
+                    )
+                    await new_client.__aenter__()
+                    if await new_client.health_check():
+                        # 重建成功！
+                        self._client = new_client
+                        self._initialized = True
+                        self._update_status("healthy")
+                        logger.info("MemOS reconnected successfully!")
+                    else:
+                        await new_client.__aexit__(None, None, None)
+                        self._update_status("degraded", "重建连接后健康检查仍失败")
+                except Exception as e:
+                    self._update_status("error", f"重建连接失败: {str(e)[:100]}")
+
+    def start_health_monitor(self) -> None:
+        """启动健康检查后台任务（防重复启动）."""
+        if self._health_monitor_started:
+            return
+        self._health_monitor_started = True
+        asyncio.create_task(self._health_check_loop())
 
     async def close(self) -> bool:
         """关闭 MemOS 连接."""
@@ -261,7 +356,7 @@ class MemosMemoryManager(BaseMemoryManager):
                 user_id=self._config.user_id,
                 writable_cube_ids=[self._cube_id],
                 messages=[{"role": "system", "content": summary_content}],
-                async_mode="async",
+                async_mode="sync",
                 info={
                     "source": "qwenpaw_summarize",
                     "agent_id": self.agent_id,
@@ -295,12 +390,21 @@ class MemosMemoryManager(BaseMemoryManager):
         Returns:
             ToolResponse: 搜索结果
         """
-        if not self._client or not self._config:
+        # 检查是否降级模式
+        if not self._initialized or not self._client or not self._config:
             return ToolResponse(
                 content=[
                     TextBlock(
                         type="text",
-                        text="MemOS memory system not initialized.",
+                        text="⚠️ MemOS 当前不可用（降级模式）\n\n"
+                             "可能原因：\n"
+                             "• 网络连接失败\n"
+                             "• MemOS 服务不可用\n"
+                             "• API 认证失败\n\n"
+                             "解决方案：\n"
+                             "1. 进入配置页面检查 MemOS 设置\n"
+                             "2. 将 Memory Manager 切换为 ReMeLight\n"
+                             "3. 修复后重启服务",
                     ),
                 ],
             )
@@ -416,10 +520,15 @@ class MemosMemoryManager(BaseMemoryManager):
         Returns:
             ToolResponse with add result
         """
-        if not self._client or not self._config:
+        # 检查是否降级模式
+        if not self._initialized or not self._client or not self._config:
             return ToolResponse(
                 content=[
-                    TextBlock(type="text", text="MemOS not initialized"),
+                    TextBlock(
+                        type="text",
+                        text="⚠️ MemOS 当前不可用，无法保存记忆\n\n"
+                             "请进入配置页面将 Memory Manager 切换为 ReMeLight",
+                    ),
                 ],
             )
 
@@ -432,7 +541,7 @@ class MemosMemoryManager(BaseMemoryManager):
                 user_id=self._config.user_id,
                 writable_cube_ids=[self._cube_id],
                 messages=messages,
-                async_mode="async",
+                async_mode="sync",
                 info=info or {
                     "source": "qwenpaw_manual_add",
                     "agent_id": self.agent_id,

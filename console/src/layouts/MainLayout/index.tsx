@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Layout, Spin } from "antd";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -8,6 +8,8 @@ import ConsolePollService from "../../components/ConsolePollService";
 import { ChunkErrorBoundary } from "../../components/ChunkErrorBoundary";
 import { lazyImportWithRetry } from "../../utils/lazyWithRetry";
 import { usePlugins } from "../../plugins/PluginContext";
+import { MemosStatusBanner } from "../../components/MemosStatusBanner";
+import { agentApi } from "../../api/modules/agent";
 import styles from "../index.module.less";
 
 // Chat is eagerly loaded (default landing page)
@@ -82,8 +84,43 @@ export default function MainLayout() {
       : "chat";
   }
 
+  // MemOS 状态
+  const [memosStatus, setMemosStatus] = useState<{
+    status: string;
+    errorMsg?: string;
+  }>({ status: "unknown" });
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchMemosStatus = async () => {
+      try {
+        const config = await agentApi.getAgentRunningConfig();
+        const memosConfig = config.memos_memory_config;
+        if (cancelled) return;
+        setMemosStatus({
+          status: memosConfig?.memos_status || "unknown",
+          errorMsg: memosConfig?.memos_error_msg,
+        });
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    fetchMemosStatus();
+    const interval = setInterval(fetchMemosStatus, 30000); // 每 30 秒轮询
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <Layout className={styles.mainLayout}>
+      <MemosStatusBanner
+        status={memosStatus.status}
+        errorMsg={memosStatus.errorMsg}
+      />
       <Header />
       <Layout>
         <Sidebar selectedKey={selectedKey} />

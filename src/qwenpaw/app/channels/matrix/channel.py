@@ -366,6 +366,89 @@ class MatrixChannel(BaseChannel):
             "detail": "Matrix client is connected.",
         }
 
+    async def _handle_sync_error(self, exc: Exception) -> bool:
+        """处理 Sync 过程中的 token 过期错误，自动重新登录。
+        
+        如果是 token 过期错误 (M_UNKNOWN_TOKEN)，尝试用密码重新登录。
+        返回 True 表示已恢复，下次 sync 会正常工作。
+        返回 False 表示无法恢复，需要继续 sleep 重试。
+        """
+        exc_str = str(exc).lower()
+        
+        # 检测 token 过期相关错误
+        token_errors = [
+            "m_unknown_token",
+            "unknown token",
+            "invalid access token",
+            "token expired",
+            "unauthorized",
+            "401",
+        ]
+        
+        is_token_error = any(err in exc_str for err in token_errors)
+        
+        if not is_token_error:
+            return False
+        
+        logger.warning(
+            "MatrixChannel: token expired or invalid, attempting re-login..."
+        )
+        
+        # 尝试用密码重新登录
+        if not (self._cfg.username and self._cfg.password):
+            logger.error(
+                "MatrixChannel: token expired but no username/password "
+                "configured for re-login"
+            )
+            return False
+        
+        try:
+            user_mxid = self._cfg.user_id or f"@{self._cfg.username}:{self._cfg.homeserver.split('://')[1]}"
+            self._client.user = user_mxid
+            
+            # 关闭旧 session
+            if self._client._session:
+                await self._client._session.close()
+                self._client._session = None
+            
+            # 重新登录
+            resp = await self._client.login(
+                password=self._cfg.password,
+                device_name=self._cfg.device_name,
+            )
+            
+            if isinstance(resp, LoginResponse):
+                self._user_id = resp.user_id
+                self._cfg.access_token = self._client.access_token
+                
+                # 持久化新 token
+                try:
+                    self._persist_access_token(self._client.access_token)
+                except Exception as e:
+                    logger.warning(
+                        "MatrixChannel: failed to persist re-login token: %s",
+                        e,
+                    )
+                
+                logger.info(
+                    "MatrixChannel: re-login successful! device_id=%s",
+                    resp.device_id,
+                )
+                return True
+            else:
+                logger.error(
+                    "MatrixChannel: re-login failed: %s",
+                    resp,
+                )
+                return False
+                
+        except Exception as relogin_err:
+            logger.exception(
+                "MatrixChannel: re-login exception: %s",
+                relogin_err,
+            )
+            return False
+
     # pylint: disable=too-many-branches
     async def start(self) -> None:
         if not self._cfg.homeserver:
@@ -697,6 +780,17 @@ class MatrixChannel(BaseChannel):
                 raise
             except Exception as exc:
                 logger.exception("MatrixChannel: sync exception: %s", exc)
+                
+                # 尝试处理 token 过期错误
+                if hasattr(self, '_handle_sync_error'):
+                    recovered = await self._handle_sync_error(exc)
+                    if recovered:
+                        logger.info(
+                            "MatrixChannel: token error recovered, continuing sync"
+                        )
+                        next_batch = None  # 重置 sync 位置，重新开始
+                        continue
+                
                 await asyncio.sleep(5)
 
     # ------------------------------------------------------------------

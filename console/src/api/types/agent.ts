@@ -72,6 +72,11 @@ export interface MemosMemoryConfig {
   timeout_seconds: number;
   summarize_when_compact: boolean;
   auto_memory_interval: number | null;
+  memory_tool_visible: boolean;
+  // 运行时状态字段
+  memos_status?: string;
+  memos_error_msg?: string;
+  memos_last_check?: string;
 }
 
 export interface AutoTitleConfig {

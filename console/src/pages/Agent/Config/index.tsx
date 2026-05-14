@@ -42,6 +42,15 @@ function AgentConfigPage() {
   const memoryBackend =
     Form.useWatch("memory_manager_backend", form) || "remelight";
 
+  // 获取 MemOS 状态（用于显示状态徽章）
+  const memosConfig = Form.useWatch("memos_memory_config", form);
+  const memosStatus = memosConfig
+    ? {
+        status: memosConfig.memos_status || "unknown",
+        errorMsg: memosConfig.memos_error_msg,
+      }
+    : undefined;
+
   const dynamicTabs = useMemo(() => {
     const baseTabs = [
       {
@@ -122,7 +131,7 @@ function AgentConfigPage() {
         ),
         children: (
           <div className={styles.tabContent}>
-            <MemoryComponent />
+            <MemoryComponent memosStatus={memosStatus} />
           </div>
         ),
       });
