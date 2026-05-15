@@ -24,7 +24,7 @@ export const CONTEXT_MANAGER_BACKEND_MAPPINGS: Record<
 
 export const MEMORY_MANAGER_BACKEND_MAPPINGS: Record<
   string,
-  BackendMapping<object>
+  BackendMapping<{ memosStatus?: { status: string; errorMsg?: string } }>
 > = {
   remelight: {
     configField: "reme_light_memory_config",
